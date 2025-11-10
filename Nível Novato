@@ -1,0 +1,149 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+// Definição da estrutura que representa uma peça do Tetris. Cada peça tem:
+  // - nome: caractere que indica o tipo ('I', 'O', 'T', 'L')
+  // - id: número inteiro que identifica de forma única cada peça
+typedef struct {
+    char nome;
+    int id;
+} Peca;
+
+// Definição da estrutura da Fila Circular. A fila armazenará até 5 peças e usará índices para controle:
+  // - inicio: posição da peça que será removida
+  // - fim: posição onde será inserida a próxima peça
+  // - tamanho: quantas peças estão atualmente na fila
+typedef struct {
+    Peca pecas[5];  // vetor fixo com capacidade para 5 peças
+    int inicio;
+    int fim;
+    int tamanho;
+} Fila;
+
+// Função: inicializarFila - Objetivo: preparar a fila para uso, zerando os índices
+void inicializarFila(Fila *f) {
+    f->inicio = 0;   // primeira posição da fila
+    f->fim = 0;      // posição de inserção
+    f->tamanho = 0;  // inicialmente a fila está vazia
+}
+
+// Função: gerarPeca - Objetivo: criar uma nova peça automaticamente - Retorna: uma struct Peca com tipo aleatório e id informado
+Peca gerarPeca(int id) {
+    char tipos[] = {'I', 'O', 'T', 'L'}; // tipos possíveis de peça
+    Peca nova;
+    nova.nome = tipos[rand() % 4]; // escolhe aleatoriamente um tipo
+    nova.id = id;                  // define o identificador único
+    return nova;                   // retorna a nova peça gerada
+}
+
+// Função: enfileirar (enqueue) -  Objetivo: inserir uma nova peça no final da fila
+void enfileirar(Fila *f, Peca nova) {
+    // Verifica se a fila já atingiu sua capacidade máxima
+    if (f->tamanho == 5) {
+        printf("A fila está cheia! Não é possível adicionar nova peça.\n");
+        return;
+    }
+
+    // Insere a nova peça na posição atual de 'fim'
+    f->pecas[f->fim] = nova;
+
+    // Atualiza o índice 'fim' de forma circular
+    // Exemplo: se fim = 4, o próximo será 0
+    f->fim = (f->fim + 1) % 5;
+
+    // Aumenta o tamanho da fila
+    f->tamanho++;
+}
+
+// Função: desenfileirar (dequeue) - Objetivo: remover a peça mais antiga (da frente da fila)
+void desenfileirar(Fila *f) {
+    // Verifica se há peças na fila
+    if (f->tamanho == 0) {
+        printf("A fila está vazia! Nenhuma peça para jogar.\n");
+        return;
+    }
+
+    // Obtém a peça que está na frente da fila
+    Peca jogada = f->pecas[f->inicio];
+
+    // Mostra qual peça foi "jogada" (removida)
+    printf("Peça jogada: [%c %d]\n", jogada.nome, jogada.id);
+
+    // Atualiza o índice 'inicio' para a próxima posição
+    f->inicio = (f->inicio + 1) % 5;
+
+    // Diminui o tamanho total da fila
+    f->tamanho--;
+}
+
+// Função: exibirFila - Objetivo: mostrar todas as peças atualmente na fila
+void exibirFila(Fila *f) {
+    printf("\nFila de Peças:\n");
+
+    // Caso não haja peças
+    if (f->tamanho == 0) {
+        printf("(vazia)\n");
+        return;
+    }
+
+    // Percorre a fila circularmente, exibindo cada peça
+    int i = f->inicio;
+    for (int count = 0; count < f->tamanho; count++) {
+        printf("[%c %d] ", f->pecas[i].nome, f->pecas[i].id);
+        i = (i + 1) % 5; // avança circularmente
+    }
+    printf("\n");
+}
+
+// Função principal: main - Objetivo: simular o funcionamento da fila de peças do Tetris
+int main() {
+    srand(time(NULL)); // inicializa o gerador de números aleatórios
+
+    Fila fila;             // cria a fila principal do jogo
+    inicializarFila(&fila); // inicializa a fila vazia
+
+    int idGlobal = 0; // contador global de IDs únicos
+
+    // Preenche a fila com 5 peças iniciais
+    for (int i = 0; i < 5; i++) {
+        Peca nova = gerarPeca(idGlobal++);
+        enfileirar(&fila, nova);
+    }
+
+    int opcao; // variável para armazenar a escolha do jogador
+
+    // Loop principal do menu
+    do {
+        exibirFila(&fila); // mostra a fila atual
+
+        // Exibe as opções de ação
+        printf("\nMenu de Ações:\n");
+        printf("1 - Jogar peça (dequeue)\n");
+        printf("2 - Inserir nova peça (enqueue)\n");
+        printf("0 - Sair\n");
+        printf("Escolha: ");
+        scanf("%d", &opcao);
+
+        // Verifica a opção escolhida e executa a ação correspondente
+        switch (opcao) {
+            case 1:
+                desenfileirar(&fila); // remove a peça da frente
+                break;
+            case 2: {
+                // Gera e insere uma nova peça
+                Peca nova = gerarPeca(idGlobal++);
+                enfileirar(&fila, nova);
+                printf("Nova peça adicionada: [%c %d]\n", nova.nome, nova.id);
+                break;
+            }
+            case 0:
+                printf("🏁 Encerrando o jogo...\n");
+                break;
+            default:
+                printf("Opção inválida!\n");
+        }
+    } while (opcao != 0); // repete até o jogador escolher sair
+
+    return 0; // encerra o programa
+}
